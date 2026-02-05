@@ -23,28 +23,89 @@ public class GamePanel extends JPanel implements ActionListener {
     Timer timer;
     Random random;
 
+    // Game States
+    enum GameState {
+        MENU,
+        PLAYING,
+        GAME_OVER
+    }
+    GameState gameState = GameState.MENU;
+
+    int highScore = 0;
+
     public GamePanel() {
         random = new Random();
         this.setPreferredSize(new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT));
         this.setBackground(Color.black);
         this.setFocusable(true);
         this.addKeyListener(new MyKeyAdapter());
-        startGame();
+        this.addMouseListener(new MyMouseAdapter());
+
+        timer = new Timer(DELAY, this);
     }
 
     public void startGame() {
+    // Reset game variables
+        bodyParts = 6;
+        applesEaten = 0;
+        direction = 'R';
+
+        // Reset snake position
+        for (int i = 0; i < bodyParts; i++) {
+            x[i] = 0;
+            y[i] = 0;
+        }
+        
         newApple();
         running = true;
-        timer = new Timer(DELAY, this);
+        gameState = GameState.PLAYING;
         timer.start();
     }
 
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        draw(g);
+
+        switch (gameState) {
+            case MENU:
+                drawMenu(g);
+                break;
+                case PLAYING:
+                draw(g);
+                break;
+                case GAME_OVER:
+                gameOver(g);
+        }
     }
 
-    public void draw(Graphics g) {
+// Draw Menu
+public void drawMenu(Graphics g) {
+    // Title
+    g.setColor(Color.green);
+    g.setFont(new Font("Ink Free", Font.BOLD, 75));
+    FontMetrics metrics1 = getFontMetrics(g.getFont());
+    g.drawString("Snake Game", (SCREEN_WIDTH - metrics1.stringWidth("Snake Game")) / 2, 150);
+
+// Play button
+    g.setColor(Color.green);
+    g.fillRect(200, 250, 200, 60);
+    g.setColor(Color.black);
+    g.setFont(new Font("Ink Free", Font.BOLD, 40));
+    FontMetrics metrics2 = getFontMetrics(g.getFont());
+    g.drawString("Play", (SCREEN_WIDTH - metrics2.stringWidth("PLAY")) / 2, 295);
+
+// High Score
+    g.setColor(Color.yellow);
+    g.setFont(new Font("Ink Free", Font.BOLD, 30));
+    FontMetrics metrics3 = getFontMetrics(g.getFont());
+    g .drawString("High Score: " + highScore, (SCREEN_WIDTH - metrics3.stringWidth("High Score: " + highScore)) / 2, 400);
+
+// Instructions
+    g .setColor(Color.white);
+    g.setFont(new Font("Ink Free", Font.PLAIN, 20));
+    FontMetrics metrics4 = getFontMetrics(g.getFont());
+    g.drawString("Use arrow keys to move", (SCREEN_WIDTH - metrics4.stringWidth("Use arrow keys to move")) / 2, 500);
+}
+public void draw(Graphics g) {
         if (running) {
             // Draw Grid , optional for debugging
             
@@ -70,11 +131,19 @@ public class GamePanel extends JPanel implements ActionListener {
                     }
                 }
 
-                // Draw Score
+                // Draw Score 
                 g.setColor(Color.red);
                 g.setFont(new Font("Ink Free", Font.BOLD, 40));
                 FontMetrics metrics = getFontMetrics(g.getFont());
                 g.drawString("Score: " + applesEaten, (SCREEN_WIDTH - metrics.stringWidth("Score: " + applesEaten)) /  2,  g.getFont().getSize());
+
+            /*
+                 // Draw High Score - top left
+                g.setColor(Color.yellow);
+                g  .setFont(new Font("Ink Free", Font.BOLD, 30));
+                g.drawString("High Score: " + highScore, 10, 60);
+
+                */
         } else {
             gameOver(g);
         }
@@ -123,6 +192,12 @@ public class GamePanel extends JPanel implements ActionListener {
             }
         }
 
+        // Check if head touches borders
+        if (x[0] < 0 || x[0] >= SCREEN_WIDTH || y[0] < 0 || y[0] >= SCREEN_HEIGHT) {
+            running = false;
+        }
+
+        /* 
         // Check if head touches left border
         if (x[0] < 0) {
             running = false;
@@ -142,9 +217,16 @@ public class GamePanel extends JPanel implements ActionListener {
         if (y[0] >= SCREEN_HEIGHT) {
             running = false;
         }
-
+*/
         if (!running) {
             timer.stop();
+
+            // Update hight score
+            if (applesEaten> highScore) {
+                highScore = applesEaten;
+            }
+
+            gameState = GameState.GAME_OVER;
         }
     }
 
@@ -160,11 +242,25 @@ public class GamePanel extends JPanel implements ActionListener {
         g.setFont(new Font("Ink Free", Font.BOLD, 75));
         FontMetrics metrics2 = getFontMetrics(g.getFont());
         g.drawString("Game Over", (SCREEN_WIDTH - metrics2.stringWidth("Game Over")) / 2, SCREEN_HEIGHT / 2);
+
+    // High Score
+        g.setColor(Color.yellow);
+        g.setFont(new Font("Ink Free", Font.BOLD, 40));
+        FontMetrics metrics3 = getFontMetrics(g.getFont());
+        g .drawString("High Score: " + highScore, (SCREEN_WIDTH - metrics3.stringWidth("High Score: " + highScore)) / 2, 100);
+
+    // Play Again button
+        g.setColor(Color.green);
+        g.fillRect(175, 350, 250, 60);
+        g.setColor(Color.black);
+        g.setFont(new Font("Ink Free", Font.BOLD, 40));
+        FontMetrics metrics4 = getFontMetrics(g.getFont());
+        g.drawString("Play Again", (SCREEN_WIDTH - metrics4.stringWidth("Play Again")) / 2, 395);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (running) {
+        if (running && gameState == GameState.PLAYING) {
             move();
             checkApple();
             checkCollisions();
@@ -196,7 +292,36 @@ public class GamePanel extends JPanel implements ActionListener {
                                 direction = 'D';
                             }
                             break;
+                            case KeyEvent.VK_SPACE:
+                                if (gameState == GameState.MENU || gameState == GameState.GAME_OVER) {
+                                    startGame();
+                                    gameState = GameState.PLAYING;
+                                }
             }
+        }
+    }
+
+    public class MyMouseAdapter extends MouseAdapter {
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            int mouseX = e.getX();
+            int mouseY = e.getY();
+
+        // Check if PLAY AGAIN button clicked in GAME OVER state
+        if (gameState == GameState.GAME_OVER) {
+            // Check if click is within the bounds of the "Play Again" button
+            if (mouseX >= 175 && mouseX <= 425 && mouseY >= 350 && mouseY <= 410) {
+                startGame();
+            }
+        }
+
+        // Check if PLAY button clicked in MENU state
+        if (gameState == GameState.MENU) {
+            // Check if click is within the bounds of the "Play" button
+            if (mouseX >= 200 && mouseX <= 400 && mouseY >= 250 && mouseY <= 310) {
+                startGame();
+            }
+        }
         }
     }
 }
