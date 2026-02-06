@@ -1,6 +1,10 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.Random;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 
 public class GamePanel extends JPanel implements ActionListener {
@@ -33,6 +37,14 @@ public class GamePanel extends JPanel implements ActionListener {
 
     int highScore = 0;
 
+
+    // Image variables
+    BufferedImage appleImage;
+    BufferedImage headUp, headDown, headLeft, headRight;
+    BufferedImage bodyVerticle, bodyHorizontal;
+    BufferedImage bodyTopLeft, bodyTopRight, bodyBottomLeft, bodyBottomRight;
+    BufferedImage tailUp, tailDown, tailLeft, tailRight;
+
     public GamePanel() {
         random = new Random();
         this.setPreferredSize(new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT));
@@ -42,6 +54,38 @@ public class GamePanel extends JPanel implements ActionListener {
         this.addMouseListener(new MyMouseAdapter());
 
         timer = new Timer(DELAY, this);
+
+        // load images
+        loadImages();
+    }
+
+    private void loadImages() {
+        try {
+            appleImage = ImageIO.read(new File("Graphics/apple.png"));
+
+            headUp = ImageIO.read(new File("Graphics/head_up.png"));
+            headDown = ImageIO.read(new File("Graphics/head_down.png"));
+            headRight  = ImageIO.read(new File("Graphics/head_right.png"));
+            headLeft  = ImageIO.read(new File("Graphics/head_left.png"));
+
+            bodyVerticle = ImageIO.read(new File("Graphics/body_verticle.png"));
+            bodyHorizontal = ImageIO.read(new File("Graphics/body_horizontal.png"));
+
+            bodyTopLeft = ImageIO.read(new File("Graphics/body_topleft.png"));
+            bodyTopRight = ImageIO.read(new File("Graphics/body_topright.png"));
+            bodyBottomLeft = ImageIO.read(new File("Graphics/body_bottomleft.png"));
+            bodyBottomRight = ImageIO.read(new File("Graphics/body_bottomright.png"));
+
+            tailUp = ImageIO.read(new File("Graphics/tail_up.png"));
+            tailDown = ImageIO.read(new File("Graphics/tail_down.png"));
+            tailLeft = ImageIO.read(new File("Graphics/tail_left.png"));
+            tailRight = ImageIO.read(new File("Graphics/tail_right.png"));
+
+            System.out.println("All Images Loaded Successfully");
+        } catch (IOException e) {
+            System.out.println("Error loading images" + e.getMessage());
+            System.out.println("Make sure the Graphics folder is in the same dir as your .java files");
+        }
     }
 
     public void startGame() {
@@ -115,19 +159,25 @@ public void draw(Graphics g) {
                 g.drawLine(0, i * UNIT_SIZE, SCREEN_WIDTH, i * UNIT_SIZE);
             } */
 
-                // Draw apple
+            // Draw apple
+
+            if (appleImage != null) {
+                g.drawImage(appleImage, appleX, appleY, UNIT_SIZE, UNIT_SIZE, this);
+            } else {
+                // Fall back to this Drawing of apple, if imags will not load
                 g.setColor(Color.red);
                 g.fillOval(appleX, appleY, UNIT_SIZE, UNIT_SIZE);
+            }
 
 
                 // Draw Snake
                 for (int i = 0; i < bodyParts; i++)  {
                     if (i == 0) {
-                        g.setColor(Color.green);
-                        g.fillRect(x[i], y[i], UNIT_SIZE, UNIT_SIZE);
+                        drawHead(g, i);
+                    } else if (i == bodyParts - 1) {
+                        drawTail(g, i);
                     } else {
-                        g.setColor(new Color(45, 180, 0));
-                        g.fillRect(x[i], y[i], UNIT_SIZE, UNIT_SIZE);
+                        drawBody(g, i);
                     }
                 }
 
@@ -146,6 +196,112 @@ public void draw(Graphics g) {
                 */
         } else {
             gameOver(g);
+        }
+    }
+
+
+    private void drawHead(Graphics g, int index) {
+        BufferedImage headImage = null;
+
+        switch (direction) {
+            case 'U':
+                headImage = headUp;
+            break;
+
+            case 'D':
+                headImage = headDown;
+            break;
+
+            case 'L':
+                headImage = headLeft;
+            break;
+
+            case 'R':
+                headImage = headRight;
+        }
+
+        if (headImage != null) {
+            g.drawImage(headImage, x[index], y[index], UNIT_SIZE, UNIT_SIZE, this);
+        } else {
+            // fallback
+            g.setColor(Color.green);
+            g.fillRect(x[index], y[index], UNIT_SIZE, UNIT_SIZE);
+        }
+    }
+
+    // Draw body
+    private void drawBody(Graphics g, int index) {
+        BufferedImage bodyImage = null;
+
+        // get directions
+        int prevX = x[index - 1] -  x[index];
+        int prevY = y[index - 1] - y[index];
+        int nextX = x[index + 1] - x[index];
+        int nextY = y[index + 1] - y[index];
+
+        // straight horizontal
+        if (prevX != 0 && nextX != 0) {
+            bodyImage = bodyHorizontal;
+        }
+        // straight vertical
+        else if (prevY != 0 && nextY != 0) {
+            bodyImage = bodyVerticle;
+        }
+
+        // Top-left corner (coming from top, going left OR coming from left, going up)
+        else if ((prevY == -UNIT_SIZE && nextX == -UNIT_SIZE) || (prevX == -UNIT_SIZE && nextY == -UNIT_SIZE)) {
+            bodyImage = bodyTopLeft;
+        }
+
+        // Top-right corner (coming from top, going right OR coming from right, going up)
+        else if ((prevY == -UNIT_SIZE && nextX == UNIT_SIZE) || (prevX == UNIT_SIZE && nextY == -UNIT_SIZE)) {
+                bodyImage = bodyTopRight;
+        }
+
+        // Bottom-left corner (coming from bottom, going left OR coming from left, going down)
+        else if ((prevY == UNIT_SIZE && nextX == -UNIT_SIZE) || (prevX == UNIT_SIZE && nextY == UNIT_SIZE)) {
+            bodyImage = bodyBottomLeft;
+        }
+
+        // Bottom-right corner (coming from bottom, going right OR coming from right, going down)
+        else if ((prevY == UNIT_SIZE && nextX == UNIT_SIZE) || (prevX == UNIT_SIZE && nextY == UNIT_SIZE)) {
+            bodyImage = bodyBottomRight;
+        }
+
+        if (bodyImage != null) {
+            g.drawImage(bodyImage, x[index], y[index], UNIT_SIZE, UNIT_SIZE, this);
+        } else {
+            // fallback
+            g.setColor(new Color(45, 180, 0));
+            g.fillRect(x[index], y[index], UNIT_SIZE, UNIT_SIZE);
+        }
+    }
+
+    // draw tail based on direction
+    private void drawTail(Graphics g, int index) {
+        BufferedImage tailImage = null;
+
+        // Determine tail direction based on the segment before it
+        int diffX = x[index] - x[index - 1];
+        int diffY = y[index] - y[index - 1];
+
+
+        if (diffX == UNIT_SIZE) {
+            tailImage = tailRight;
+        } else if(diffX == -UNIT_SIZE) {
+            tailImage = tailLeft;
+        } else if (diffY == UNIT_SIZE) {
+            tailImage = tailDown;
+        } else if (diffY == -UNIT_SIZE) {
+            tailImage = tailUp;
+        }
+
+        if (tailImage != null) {
+            g.drawImage(tailImage, x[index], y[index], UNIT_SIZE, UNIT_SIZE, this);
+        } else {
+            // fallback
+            g.setColor(new Color(45, 180, 0));
+            g.fillRect(x[index], y[index], UNIT_SIZE, UNIT_SIZE);
         }
     }
 
@@ -272,31 +428,41 @@ public void draw(Graphics g) {
         @Override
         public void keyPressed(KeyEvent e) {
             switch (e.getKeyCode()) {
-                case KeyEvent.VK_LEFT:
-                    if (direction != 'R') {
-                        direction = 'L';
-                    }
-                    break;
+                    case KeyEvent.VK_LEFT:
+                        if (direction != 'R') {
+                            direction = 'L';
+                            }
+                        break;
                     case KeyEvent.VK_RIGHT:
                         if (direction != 'L') {
                             direction = 'R';
-                        }
+                            }
                         break;
                     case KeyEvent.VK_UP:
                         if (direction != 'D') {
                             direction = 'U';
-                        }
+                            }
                         break;
-                        case KeyEvent.VK_DOWN:
+                    case KeyEvent.VK_DOWN:
                             if (direction != 'U') {
                                 direction = 'D';
                             }
-                            break;
-                            case KeyEvent.VK_SPACE:
-                                if (gameState == GameState.MENU || gameState == GameState.GAME_OVER) {
-                                    startGame();
-                                    gameState = GameState.PLAYING;
-                                }
+                        break;
+                    case KeyEvent.VK_SPACE:
+                            if (gameState == GameState.MENU || gameState == GameState.GAME_OVER) {
+                                startGame();
+                            }
+                        break;
+                    case KeyEvent.VK_ESCAPE:
+                        if (gameState == GameState.GAME_OVER) {
+                            gameState = GameState.MENU;
+                            }
+                        break;
+                    case KeyEvent.VK_ENTER:
+                        if (gameState == GameState.GAME_OVER) {
+                            gameState = GameState.MENU;
+                        }
+                        break;
             }
         }
     }
@@ -321,6 +487,11 @@ public void draw(Graphics g) {
             if (mouseX >= 200 && mouseX <= 400 && mouseY >= 250 && mouseY <= 310) {
                 startGame();
             }
+        }
+
+        // Back to Menu button
+        if (mouseX >= 175 && mouseY <= 425 && mouseY >= 380 && mouseY <= 440) {
+            gameState = GameState.MENU;
         }
         }
     }
