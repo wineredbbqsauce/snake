@@ -239,32 +239,42 @@ public void draw(Graphics g) {
         int nextX = x[index + 1] - x[index];
         int nextY = y[index + 1] - y[index];
 
-        // straight horizontal
-        if (prevX != 0 && nextX != 0) {
+        boolean prevFromLeft = prevX > 0;
+        boolean prevFromRight = prevX < 0;
+        boolean prevFromUp = prevY > 0;
+        boolean prevFromDown = prevY < 0;
+        boolean nextToLeft = nextX > 0;
+        boolean nextToRight = nextX < 0;
+        boolean nextToUp = nextY > 0;
+        boolean nextToDown = nextY < 0;
+
+        // Straight horizontal
+        if ((prevFromLeft && prevFromRight) || (nextToLeft && nextToRight)) {
             bodyImage = bodyHorizontal;
         }
-        // straight vertical
-        else if (prevY != 0 && nextY != 0) {
+
+        // Straight vertical
+        else if ((prevFromUp && prevFromDown) || (nextToUp && nextToDown)) {
             bodyImage = bodyVerticle;
         }
 
-        // Top-left corner (coming from top, going left OR coming from left, going up)
-        else if ((prevY == -UNIT_SIZE && nextX == -UNIT_SIZE) || (prevX == -UNIT_SIZE && nextY == -UNIT_SIZE)) {
+        // Top-left Corner
+        else if ((prevFromUp && nextToRight) || (prevFromRight && nextToDown)) {
             bodyImage = bodyTopLeft;
         }
 
-        // Top-right corner (coming from top, going right OR coming from right, going up)
-        else if ((prevY == -UNIT_SIZE && nextX == UNIT_SIZE) || (prevX == UNIT_SIZE && nextY == -UNIT_SIZE)) {
-                bodyImage = bodyTopRight;
+        // Top-right Corner
+        else if ((prevFromDown && nexToLeft) || (prevFromLeft && nextToDown)) {
+            bodyImage = bodyTopRight;
         }
 
-        // Bottom-left corner (coming from bottom, going left OR coming from left, going down)
-        else if ((prevY == UNIT_SIZE && nextX == -UNIT_SIZE) || (prevX == UNIT_SIZE && nextY == UNIT_SIZE)) {
+        // Bottom-left Corner
+        else if ((prevFromUp && nextToRight) || (prevFromRight && nextToUp)) {
             bodyImage = bodyBottomLeft;
         }
 
-        // Bottom-right corner (coming from bottom, going right OR coming from right, going down)
-        else if ((prevY == UNIT_SIZE && nextX == UNIT_SIZE) || (prevX == UNIT_SIZE && nextY == UNIT_SIZE)) {
+        // Bottom-right Corner
+        else if ((prevFromDown && nextToLeft) || (prevFromLeft && nextToUp)) {
             bodyImage = bodyBottomRight;
         }
 
